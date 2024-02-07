@@ -9,53 +9,56 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
-
+    // Get context reference
+    @Environment(\.modelContext) private var context
+    @Query private var items: [DataItem]
     var body: some View {
-        NavigationSplitView {
+        VStack {
+            Text("Tap on this button to add data")
+                .padding()
+            Button("Add an item") {
+                addItem()
+            }
             List {
                 ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+                    HStack {
+                        Text(item.name)
+                        Spacer()
+                        Button {
+                            updateItem(item)
+                        } label: {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                        }
                     }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+                }.onDelete { indexes in
+                    for index in indexes {
+                        deleteItem(items[index])
                     }
                 }
             }
-        } detail: {
-            Text("Select an item")
-        }
+        }.padding()
     }
-
+    
     private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
+        // Create the item
+        let item = DataItem(name: "Text")
+        // Add the item to the data context
+        context.insert(item)
+        print("ItemID: \(item.id), ItemName: \(item.name)")
     }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
-        }
+    
+    private func deleteItem(_ item: DataItem) {
+        context.delete(item)
+    }
+    
+    private func updateItem(_ item: DataItem) {
+        // Edit the item data
+        item.name = "Updated text item"
+        // Save the context
+        try? context.save()
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
 }
